@@ -1,0 +1,2 @@
+# Python Hello World Dependencies
+# 本项目不需要额外依赖，仅使用标准库
