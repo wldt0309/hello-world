@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase + Claude Hello World</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .status-badge.connected {
+            background: #10b981;
+        }
+
+        .status-badge.not-connected {
+            background: #ef4444;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .chat-form {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .chat-form textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            resize: none;
+            height: 100px;
+            transition: border-color 0.3s;
+        }
+
+        .chat-form textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .chat-form button {
+            margin-top: 15px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .chat-form button:hover {
+            transform: translateY(-2px);
+        }
+
+        .messages {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .message {
+            padding: 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .message:last-child {
+            border-bottom: none;
+        }
+
+        .message-role {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message-role.user {
+            color: #667eea;
+        }
+
+        .message-role.ai {
+            color: #10b981;
+        }
+
+        .message-content {
+            color: #374151;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .message-time {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #6b7280;
+        }
+
+        .setup-guide {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .setup-guide h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+
+        .setup-guide ol {
+            color: #92400e;
+            padding-left: 20px;
+        }
+
+        .setup-guide li {
+            margin-bottom: 8px;
+        }
+
+        .setup-guide code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Supabase + Claude</h1>
+            <p>Hello World 应用</p>
+        </div>
+
+        <div class="status">
+            <span class="status-badge {% if supabase_connected %}connected{% else %}not-connected{% endif %}">
+                Supabase: {{ "已连接" if supabase_connected else "未连接" }}
+            </span>
+        </div>
+
+        {% if not supabase_connected or not claude_configured %}
+        <div class="setup-guide">
+            <h3>⚙️ 配置指南</h3>
+            <ol>
+                <li>复制 <code>.env.example</code> 为 <code>.env</code></li>
+                <li>填入你的 Supabase URL 和 Anon Key</li>
+                <li>填入你的 Claude API Key</li>
+                <li>在 Supabase SQL Editor 中执行建表 SQL</li>
+                <li>重新运行 <code>python app.py</code></li>
+            </ol>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <form class="chat-form" method="post" action="/chat">
+                <textarea name="user_message" placeholder="输入你的消息... (发送消息给Claude AI)" required></textarea>
+                <button type="submit">🚀 发送消息</button>
+            </form>
+
+            <div class="messages">
+                {% if messages %}
+                    {% for msg in messages %}
+                    <div class="message">
+                        <div class="message-role user">👤 你</div>
+                        <div class="message-content">{{ msg.user_message }}</div>
+                        <div class="message-role ai">🤖 Claude</div>
+                        <div class="message-content">{{ msg.ai_message }}</div>
+                        <div class="message-time">{{ msg.created_at }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <h3>还没有消息</h3>
+                    <p>发送第一条消息开始与Claude AI对话吧！</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

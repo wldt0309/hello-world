@@ -1,4 +1,4 @@
-name: Python Hello World CI/CD
+name: Supabase + Claude Hello World CI/CD
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,15 +23,18 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run Hello World
-      run: python main.py
-
-    - name: Run tests
+    - name: Run syntax check
       run: |
-        python -c "print('测试通过！')"
+        python -m py_compile app.py
+        python -m py_compile main.py
+
+    - name: Verify imports
+      run: |
+        python -c "import fastapi; import supabase; import anthropic"
+        echo "✓ 所有依赖导入成功"
 
   deploy:
-    needs: build
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
@@ -41,6 +44,6 @@ jobs:
     - name: Deploy summary
       run: |
         echo "🎉 部署成功！"
+        echo "项目: Supabase + Claude Hello World"
         echo "分支: ${{ github.ref }}"
         echo "提交: ${{ github.sha }}"
-        echo "作者: ${{ github.actor }}"
