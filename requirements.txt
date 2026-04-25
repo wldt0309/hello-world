@@ -1,7 +1,7 @@
 # Python dependencies
 supabase>=2.0.0
-anthropic>=0.18.0
 python-dotenv>=1.0.0
 fastapi>=0.100.0
 uvicorn>=0.23.0
 jinja2>=3.1.0
+httpx>=0.25.0

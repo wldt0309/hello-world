@@ -16,6 +16,9 @@ CREATE TABLE messages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 为 ORDER BY 创建索引，避免大表全表扫描
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages (created_at DESC);
+
 -- ============================================
 -- 启用 Row Level Security
 -- ============================================
